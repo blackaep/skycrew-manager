@@ -1,44 +1,31 @@
 from django.db import models
-
-# Create your models here.
-
-
-from django.db import models
+# We need to link passengers to a specific Flight
+from FlightInfoApi.models import Flight
 
 class Passenger(models.Model):
-    passenger_id = models.AutoField(primary_key=True)
-    flight_id = models.CharField(max_length=10)  # Matches Flight API
-
-    # Core info
-    name = models.CharField(max_length=100)
-    age = models.PositiveIntegerField()
-    gender = models.CharField(max_length=10)
-    nationality = models.CharField(max_length=50)
-
-    # Seat info (only for seated passengers)
-    SEAT_TYPES = [
-        ('business', 'Business'),
-        ('economy', 'Economy'),
+    SEAT_TYPE_CHOICES = [
+        ('BUSINESS', 'Business'),
+        ('ECONOMY', 'Economy'),
     ]
-    seat_type = models.CharField(max_length=10, choices=SEAT_TYPES, blank=True, null=True)
+
+    # Link to the flight
+    flight = models.ForeignKey(Flight, on_delete=models.CASCADE, related_name='passengers')
+    
+    name = models.CharField(max_length=100)
+    age = models.IntegerField()
+    gender = models.CharField(max_length=20)
+    nationality = models.CharField(max_length=50)
+    seat_type = models.CharField(max_length=10, choices=SEAT_TYPE_CHOICES)
+    
+    # Requirement: Seat number might be absent (null=True)
     seat_number = models.CharField(max_length=5, blank=True, null=True)
-
-    # For infants → links to parent
-    parent_passenger = models.ForeignKey(
-        'self',
-        null=True, blank=True,
-        on_delete=models.SET_NULL,
-        related_name='infants'
-    )
-
-    # For grouped passengers (family/friends sitting together)
-    affiliated_passenger_ids = models.JSONField(blank=True, null=True)
+    
+    # Requirement: Infant (0-2) has single parent info
+    # 'self' allows us to link to another Passenger model
+    parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='infant')
+    
+    # Requirement: List of affiliated passenger ids (neighbors)
+    affiliated_passengers = models.ManyToManyField('self', blank=True)
 
     def __str__(self):
-        return f"{self.name} ({self.flight_id})"
-
-    @property
-    def is_infant(self):
-        """Derived property for logic convenience"""
-        return self.age <= 2
-
+        return f"{self.name} - {self.flight.flight_number}"

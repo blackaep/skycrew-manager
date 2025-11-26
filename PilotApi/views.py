@@ -1,3 +1,7 @@
-from django.shortcuts import render
+from rest_framework import viewsets
+from .models import Pilot
+from .serializers import PilotSerializer
 
-# Create your views here.
+class PilotViewSet(viewsets.ModelViewSet):
+    queryset = Pilot.objects.all()
+    serializer_class = PilotSerializer
