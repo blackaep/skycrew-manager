@@ -1,0 +1,15 @@
+# Python compiled files (Junk)
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual Environments (Junk)
+venv/
+env/
+.env
+
+# VS Code settings (Optional, usually good to ignore)
+.vscode/
+
+# Note: We are intentionally NOT ignoring db.sqlite3
+# so your teammates get your test data.

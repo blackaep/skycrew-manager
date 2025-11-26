@@ -38,11 +38,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'PassengerApi',
-    'CabinCrewApi',
+    'skycrewApp',
     'FlightInfoApi',
     'PilotApi',
-    'skycrewApp',
+    'CabinCrewApi',
+    'PassengerApi',
 ]
 
 MIDDLEWARE = [

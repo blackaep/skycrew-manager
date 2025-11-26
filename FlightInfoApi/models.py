@@ -1,83 +1,55 @@
 from django.db import models
+from django.core.validators import RegexValidator
 
-# 1. Airport Model
-# Stores detailed location information to avoid redundancy in the Flight model.
 class Airport(models.Model):
-    """
-    Represents an airport with its geographical and identifier details.
-    Code is in AAA format (e.g., IST, JFK).
-    """
-    code = models.CharField(max_length=3, unique=True, primary_key=True, 
-                            help_text="Airport code (AAA format).")
+    # Requirement: Code is AAA format
+    code = models.CharField(
+        max_length=3, 
+        unique=True,
+        validators=[RegexValidator(r'^[A-Z]{3}$', 'Code must be 3 uppercase letters')]
+    )
     name = models.CharField(max_length=100)
     city = models.CharField(max_length=100)
     country = models.CharField(max_length=100)
 
     def __str__(self):
-        return f"{self.name} ({self.code})"
+        return f"{self.code} - {self.name}"
 
-# 2. Vehicle Type Model
-# Stores details about the plane used for the flight.
-class VehicleType(models.Model):
-    """
-    Represents a type of aircraft with capacity and menu information.
-    """
-    type_name = models.CharField(max_length=50, unique=True)
-    total_seats = models.IntegerField(help_text="Total number of passenger seats.")
-    max_flight_crew = models.IntegerField(help_text="Maximum allowed flight crew (pilots).")
-    max_cabin_crew = models.IntegerField(help_text="Maximum allowed cabin crew.")
-    
-    # Simple representation of the seating plan and menu
-    seating_plan_info = models.TextField(help_text="JSON or descriptive text detailing seat layout.")
-    standard_menu = models.TextField(help_text="Description of the standard menu served.")
+class PlaneType(models.Model):
+    # Requirement: At least 3 types, seating plan, capacity
+    name = models.CharField(max_length=50) # e.g., Boeing 737
+    seat_capacity = models.IntegerField()
+    crew_limit = models.IntegerField()
+    # For the seating plan, we might store a JSON structure or a file path
+    seating_plan_layout = models.JSONField(help_text="JSON structure of seat coordinates")
+    standard_menu = models.TextField(help_text="Standard menu served on this vehicle")
 
     def __str__(self):
-        return self.type_name
+        return self.name
 
-# 3. Shared Flight Information Model
-# Stores information if a flight is shared with another airline.
-class SharedFlightInfo(models.Model):
-    """
-    Details about a shared flight arrangement.
-    """
-    partner_flight_number = models.CharField(max_length=6, help_text="Partner airline's flight number (AANNNN format).")
-    partner_company_name = models.CharField(max_length=100)
-    connecting_flight_info = models.TextField(blank=True, null=True, 
-                                              help_text="Details on any additional connecting flight (optional).")
-    
-    def __str__(self):
-        return f"Shared with {self.partner_company_name} ({self.partner_flight_number})"
-
-# 4. Flight Model (The core)
 class Flight(models.Model):
-    """
-    The main flight record, aggregating all related information.
-    Flight number is AANNNN format, where AA is constant for this company.
-    """
-    flight_number = models.CharField(max_length=6, unique=True, primary_key=True, 
-                                     help_text="Unique flight ID (AANNNN format).")
+    # Requirement: AANNNN format. First two letters always same (e.g., 'SC' for SkyCrew)
+    flight_number = models.CharField(
+        max_length=6,
+        unique=True,
+        validators=[RegexValidator(r'^[A-Z]{2}\d{4}$', 'Format must be AANNNN')]
+    )
+    departure_time = models.DateTimeField() # Resolution of minutes
+    duration = models.DurationField()
+    distance = models.FloatField()
     
-    # Flight Information (Date, Duration, Distance)
-    departure_time = models.DateTimeField(help_text="The date and time the flight is scheduled to take off.")
-    duration_minutes = models.IntegerField(help_text="Duration of the flight in minutes.")
-    distance_km = models.IntegerField(help_text="Flight distance in kilometers.")
+    source = models.ForeignKey(Airport, on_delete=models.CASCADE, related_name='departures')
+    destination = models.ForeignKey(Airport, on_delete=models.CASCADE, related_name='arrivals')
     
-    # Source and Destination (Foreign Keys to Airport)
-    source = models.ForeignKey(Airport, on_delete=models.PROTECT, related_name='departures', 
-                               help_text="Originating airport.")
-    destination = models.ForeignKey(Airport, on_delete=models.PROTECT, related_name='arrivals', 
-                                    help_text="Destination airport.")
+    plane_type = models.ForeignKey(PlaneType, on_delete=models.PROTECT)
     
-    # Vehicle Type (Foreign Key)
-    vehicle_type = models.ForeignKey(VehicleType, on_delete=models.PROTECT, related_name='flights', 
-                                     help_text="The type of aircraft used for this flight.")
-
-    # Shared Flight Info (One-to-One relationship, optional)
-    shared_info = models.OneToOneField(SharedFlightInfo, on_delete=models.SET_NULL, null=True, blank=True,
-                                       help_text="Optional link to shared flight details.")
+    # Shared Flight Info
+    is_shared = models.BooleanField(default=False)
+    partner_company_name = models.CharField(max_length=100, blank=True, null=True)
+    partner_flight_number = models.CharField(max_length=6, blank=True, null=True)
+    
+    # Requirement: Connecting flight info ONLY for shared flights
+    connecting_flight_info = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"Flight {self.flight_number}: {self.source.code} to {self.destination.code}"
-
-    class Meta:
-        ordering = ['departure_time']
+        return self.flight_number

@@ -14,18 +14,17 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Passenger',
+            name='Pilot',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=100)),
                 ('age', models.IntegerField()),
                 ('gender', models.CharField(max_length=20)),
                 ('nationality', models.CharField(max_length=50)),
-                ('seat_type', models.CharField(choices=[('BUSINESS', 'Business'), ('ECONOMY', 'Economy')], max_length=10)),
-                ('seat_number', models.CharField(blank=True, max_length=5, null=True)),
-                ('affiliated_passengers', models.ManyToManyField(blank=True, to='PassengerApi.passenger')),
-                ('flight', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='passengers', to='FlightInfoApi.flight')),
-                ('parent', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='infant', to='PassengerApi.passenger')),
+                ('known_languages', models.CharField(max_length=200)),
+                ('allowed_range', models.FloatField()),
+                ('seniority', models.CharField(choices=[('TRAINEE', 'Trainee'), ('JUNIOR', 'Junior'), ('SENIOR', 'Senior')], max_length=10)),
+                ('allowed_vehicle', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='FlightInfoApi.planetype')),
             ],
         ),
     ]
